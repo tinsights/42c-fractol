@@ -23,11 +23,32 @@
 # define WIDTH 800
 
 
+typedef struct t_point
+{
+	long long	x;
+	long long	y;
+
+	double a;
+	double b;
+} s_point;
+
+typedef struct t_view
+{
+	s_point	origin;
+	s_point	translation;
+	int		zoom_count;
+	int		pixel_unit;
+	double	zoom;
+} s_view;
+
 typedef struct t_params
 {
 	void	*mlx;
 	void	*win;
 	void	*img;
+	void	*addr;
+
+	s_view	view;
 
 	int		bpp;
 	int		line_size;
@@ -35,21 +56,8 @@ typedef struct t_params
 
 } s_params;
 
-typedef struct t_point
-{
-	int	x;
-	int	y;
+void draw(s_params *params);
 
-	float a;
-	float b;
-} s_point;
-
-typedef struct t_view
-{
-	s_point	origin;
-	s_point	translation;
-	float	zoom;
-} s_view;
 
 int close_window(s_params *p)
 {
@@ -61,40 +69,164 @@ int close_window(s_params *p)
 	return (1);
 }
 
-int press(int keycode, s_params *p)
+int key_hook(int keycode, s_params *p)
 {
-	printf("Key: %i\n", keycode);
 	if (keycode == 65307)
 		close_window(p);
+	else if(keycode == 65361)
+	{
+		p->view.origin.x += (p->view.zoom / WIDTH);
+		draw(p);
+	}
+	else if(keycode == 65363)
+	{
+		p->view.origin.x -= (p->view.zoom / WIDTH);
+		draw(p);
+	}
+	else if (keycode == 65364)
+	{
+		p->view.origin.y -= (p->view.zoom / HEIGHT);
+		draw(p);
+	}
+	else if (keycode == 65362)
+	{
+		p->view.origin.y += (p->view.zoom / HEIGHT);
+		draw(p);
+	}
+	else
+		printf("Key: %i\n", keycode);
 	return (1);
 }
-
-int test(s_params *p)
-{
-	printf("hello %p\n", p);
-	return (1);
-}
-
 
 int is_bounded(s_point point)
 {
-	int max_iter = 50;
-
 	s_point z;
+	double a;
+
 	z.a = 0;
 	z.b = 0;
+	int max_iter = 50;
+	int iter = 0;
 
-	while (max_iter > 0)
+	while (iter < max_iter)
 	{
-		s_point old_z;
-		old_z = z;
-		z.a = (old_z.a * old_z.a) - (old_z.b * old_z.b) + point.a;
-		z.b = (2 * old_z.a * old_z.b) + point.b;
+		a = z.a;
+		
+		z.a = (a * a) - (z.b * z.b) + point.a;
+		z.b = (2 * a * z.b) + point.b;
+		if ((z.a * z.a + z.b * z.b) > 4.0)
+			break ;
+		iter++;
+	}
+	// get a colour between red and pink
+	// map 0 - max to 0x00ff0000 and 0x00000000
+	int red = 0x00ff0000;
+	int cmax = 0x00ffd0db;
+	int range = cmax - red;
+
+	// printf("%f \n", ((double)iter / max_iter));
+	return (cmax - ((double)iter / max_iter) * range);
+}
+
+int is_bounded_heart(s_point point, s_params *p)
+{
+	s_point z;
+	double a;
+
+	z.a = 0;
+	z.b = 0;
+	int max_iter = 50 + p->view.zoom_count;
+	int iter = 0;
+	a = point.a;
+	point.a = -1 * point.b;
+	point.b = a;
+	while (iter < max_iter)
+	{
+		a = z.a;
+		z.a = (fabs(a) * a - (z.b * z.b)) + point.a;
+		z.b = (fabs(a) * z.b * 2) + point.b;
+
+		// z.a = (a * a) - (z.b * z.b) + point.a;
+		// z.b = (2 * a * z.b) + point.b;
 		if ((z.a * z.a + z.b * z.b) > 4)
 			break ;
-		max_iter--;
+		iter++;
 	}
-	return max_iter;
+	// get a colour between red and pink
+	// map 0 - max to 0x00ff0000 and 0x00000000
+	int red = 0x00ff0000;
+	int cmax = 0x00ffc0cb;
+	int range = cmax - red;
+
+	// printf("%f \n", ((double)iter / max_iter));
+	return (cmax - ((double)iter / max_iter) * range);
+}
+
+void draw(s_params *params)
+{
+	s_view view = params->view;
+
+	for (int j = 0; j < HEIGHT; j++)
+	{
+		for (int i = 0; i < WIDTH; i++)
+		{
+			s_point point;
+			point.a = (i - view.origin.x) / (view.pixel_unit * view.zoom);
+			point.b = (j - view.origin.y) / (view.pixel_unit * view.zoom);
+			int colour = is_bounded_heart(point, params);
+			// if(colour)
+			// 	printf("colour: %i %u\n", colour, mlx_get_color_value(params->mlx, colour));
+			char *pixel = params->addr + j * params->line_size + i * (params->bpp / 8);
+			*(unsigned int *) pixel = mlx_get_color_value(params->mlx, colour);
+		}
+	}
+	mlx_put_image_to_window(params->mlx, params->win, params->img, 0, 0);
+}
+
+
+int mouse_hook(int button, int x, int y, s_params *p)
+{
+	s_point point;
+	point.a = (x - p->view.origin.x) / p->view.zoom;
+	point.b = (y - p->view.origin.y) / p->view.zoom;
+
+	if (button == 4)
+	{
+
+		p->view.zoom = p->view.zoom * 1.1;
+		p->view.zoom_count++;
+
+		point.x = (point.a * p->view.zoom) + p->view.origin.x;
+		point.y = (point.b * p->view.zoom) + p->view.origin.y;
+
+		long long x_dist = point.x - x;
+		long long y_dist = point.y - y;
+		p->view.origin.x -= (x_dist);
+		p->view.origin.y -= (y_dist);
+	}
+	else if (button == 5)
+	{
+		p->view.zoom = p->view.zoom * 0.85;
+		p->view.zoom_count--;
+
+		point.x = (point.a * p->view.zoom) + p->view.origin.x;
+		point.y = (point.b * p->view.zoom) + p->view.origin.y;
+
+		long long x_dist = point.x - x;
+		long long y_dist = point.y - y;
+		p->view.origin.x -= (x_dist);
+		p->view.origin.y -= (y_dist);
+	}
+	// if (p->view.zoom_count > 200)
+	// {
+	// 	printf("zc: %i zoom: %lf\n", p->view.zoom_count, p->view.zoom);
+	// 	printf("ox: %lli oy: %lli\n", p->view.origin.x, p->view.origin.y);
+
+	// 	printf("a: %lf b: %lf\n", point.a, point.b);
+	// }
+	if (button || x || y)
+		draw(p);
+	return (1);
 }
 
 int	main(void)
@@ -104,47 +236,23 @@ int	main(void)
 	params.mlx = mlx_init();
 	params.win = mlx_new_window(params.mlx, WIDTH, HEIGHT, "test");
 	params.img = mlx_new_image(params.mlx, WIDTH, HEIGHT);
+	params.addr = mlx_get_data_addr(params.img, &(params.bpp), &(params.line_size), &(params.endian));
 	
-	char *addr = mlx_get_data_addr(params.img, &params.bpp, &params.line_size, &params.endian);
+	params.view.origin.x = WIDTH / 2;
+	params.view.origin.y = HEIGHT / 2;
+	params.view.origin.a = 0;
+	params.view.origin.b = 0;
+	params.view.zoom_count = 0;
 
-	// create origin
-	s_view view;
+	params.view.zoom = 1;
+	params.view.pixel_unit = 200;
 
-	view.origin.x = WIDTH / 2;
-	view.origin.y = HEIGHT / 2;
-	view.origin.a = 0;
-	view.origin.b = 0;
-
-	view.zoom = 200;
-
-	for (int j = 0; j < HEIGHT; j++)
-	{
-		for (int i = 0; i < WIDTH; i++)
-		{
-			s_point point;
-			point.a = (i - view.origin.x) / view.zoom;
-			point.b = (j - view.origin.y) / view.zoom;
-			// printf("x: %i y: %i \n", point.x, point.y);
-			if (!is_bounded(point))
-			{
-				printf("the point %f + %fi is bounded\n", point.a, point.b);
-				char *pixel = addr + j * params.line_size + i * (params.bpp / 8);
-				*(unsigned int *) pixel = 0x00ffffff;
-			}
-		}
-	}
-
-	// int j = 50;
-	// for (int i = 0; i < WIDTH; i++)
-	// {
-	// 	char *pixel = addr + j * params.line_size + i * (params.bpp / 8);
-	// 	*(unsigned int *) pixel = 0x00ff0000;
-	// }
-	mlx_put_image_to_window(params.mlx, params.win, params.img, 0, 0);
-
+	// draw(&params);
 	// close window with ESC key
 	// TODO: arrow keys to "move"
-	mlx_key_hook(params.win, press, &params);
+	mlx_key_hook(params.win, key_hook, &params);
+
+	mlx_mouse_hook(params.win, mouse_hook, &params);
 
 	// close window with x button
 	// TODO: understand event masking?
