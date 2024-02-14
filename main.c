@@ -135,19 +135,16 @@ int is_bounded_heart(s_point point, s_params *p)
 
 	z.a = 0;
 	z.b = 0;
-	int max_iter = 50 + p->view.zoom_count;
+	int max_iter = (p->view.zoom_count < 50) * 50 + !(p->view.zoom_count < 50) * p->view.zoom_count;
 	int iter = 0;
-	a = point.a;
-	point.a = -1 * point.b;
-	point.b = a;
 	while (iter < max_iter)
 	{
 		a = z.a;
-		z.a = (fabs(a) * a - (z.b * z.b)) + point.a;
-		z.b = (fabs(a) * z.b * 2) + point.b;
+		// z.a = (fabs(a) * a - (z.b * z.b)) + point.a;
+		// z.b = (fabs(a) * z.b * 2) + point.b;
 
-		// z.a = (a * a) - (z.b * z.b) + point.a;
-		// z.b = (2 * a * z.b) + point.b;
+		z.a = (a * a) - (z.b * z.b) + point.a;
+		z.b = (2 * a * z.b) + point.b;
 		if ((z.a * z.a + z.b * z.b) > 4)
 			break ;
 		iter++;
@@ -206,7 +203,7 @@ int mouse_hook(int button, int x, int y, s_params *p)
 	}
 	else if (button == 5)
 	{
-		p->view.zoom = p->view.zoom * 0.85;
+		p->view.zoom = p->view.zoom * 0.9;
 		p->view.zoom_count--;
 
 		point.x = (point.a * p->view.zoom) + p->view.origin.x;
