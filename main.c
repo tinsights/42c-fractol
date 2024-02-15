@@ -97,6 +97,7 @@ int key_hook(int keycode, s_params *p)
 	{
 		// reset view
 		p->view.zoom = 1;
+		p->view.zoom_count = 0;
 		p->view.origin_pixel.a = -2;
 		p->view.origin_pixel.b = 1;
 		draw(p);
@@ -106,44 +107,33 @@ int key_hook(int keycode, s_params *p)
 	return (1);
 }
 
-int is_bounded(s_point point)
-{
-	s_point z;
-	double a;
+unsigned int interpolateColor(unsigned int color1, unsigned int color2, float t) {
+    // Extract individual color components
+    unsigned char r1 = (color1 >> 16) & 0xFF;
+    unsigned char g1 = (color1 >> 8) & 0xFF;
+    unsigned char b1 = color1 & 0xFF;
+    
+    unsigned char r2 = (color2 >> 16) & 0xFF;
+    unsigned char g2 = (color2 >> 8) & 0xFF;
+    unsigned char b2 = color2 & 0xFF;
 
-	z.a = 0;
-	z.b = 0;
-	int max_iter = 50;
-	int iter = 0;
+    // Interpolate each color component
+    unsigned char r = (unsigned char)(r1 + (r2 - r1) * t);
+    unsigned char g = (unsigned char)(g1 + (g2 - g1) * t);
+    unsigned char b = (unsigned char)(b1 + (b2 - b1) * t);
 
-	while (iter < max_iter)
-	{
-		a = z.a;
-		
-		z.a = (a * a) - (z.b * z.b) + point.a;
-		z.b = (2 * a * z.b) + point.b;
-		if ((z.a * z.a + z.b * z.b) > 4.0)
-			break ;
-		iter++;
-	}
-	// get a colour between red and pink
-	// map 0 - max to 0x00ff0000 and 0x00000000
-	int red = 0x00ff0000;
-	int cmax = 0x00ffd0db;
-	int range = cmax - red;
-
-	// printf("%f \n", ((double)iter / max_iter));
-	return (cmax - ((double)iter / max_iter) * range);
+    // Pack the interpolated color components into a single integer
+    return (r << 16) | (g << 8) | b;
 }
 
-int is_bounded_heart(s_point point, s_params *p)
+int is_bounded(s_point point, s_params *p)
 {
 	s_point z;
 	double a;
 
 	z.a = 0;
 	z.b = 0;
-	int max_iter = (p->view.zoom_count < 50) * 50 + !(p->view.zoom_count < 50) * p->view.zoom_count;
+	int max_iter = p->view.zoom_count < 50 ? 50 : p->view.zoom_count;
 	int iter = 0;
 	while (iter < max_iter)
 	{
@@ -157,6 +147,17 @@ int is_bounded_heart(s_point point, s_params *p)
 			break ;
 		iter++;
 	}
+	double iter_ratio = (float)iter/max_iter;
+	if (iter == max_iter)
+		return 0x00000000;
+	else if (iter_ratio > 0.5)
+	{
+		// if 0 = > red
+		// if 1 => white
+		return interpolateColor(0x00ff0000, 0x00ffffff, (iter_ratio - 0.5) / 0.5);
+	}
+	else
+		return interpolateColor(0x001a0000, 0x00ff0000, iter_ratio / 0.5);
 	// get a colour between red and pink
 	// map 0 - max to 0x00ff0000 and 0x00000000
 	int red = 0x00ff0000;
@@ -178,7 +179,7 @@ void draw(s_params *params)
 			s_point point;
 			point.a = view.origin_pixel.a + (double) i / (view.zoom * view.pixel_unit);
 			point.b = view.origin_pixel.b - (double) j / (view.zoom * view.pixel_unit);
-			int colour = is_bounded_heart(point, params);
+			int colour = is_bounded(point, params);
 			// if(colour)
 			// 	printf("colour: %i %u\n", colour, mlx_get_color_value(params->mlx, colour));
 			char *pixel = params->addr + j * params->line_size + i * (params->bpp / 8);
