@@ -34,7 +34,7 @@ typedef struct t_point
 
 typedef struct t_view
 {
-	s_point	origin;
+	s_point	origin_pixel;
 	s_point	translation;
 	int		zoom_count;
 	int		pixel_unit;
@@ -75,22 +75,30 @@ int key_hook(int keycode, s_params *p)
 		close_window(p);
 	else if(keycode == 65361)
 	{
-		p->view.origin.x += (p->view.zoom / WIDTH);
+		p->view.origin_pixel.a -= 0.25 / p->view.zoom;
 		draw(p);
 	}
 	else if(keycode == 65363)
 	{
-		p->view.origin.x -= (p->view.zoom / WIDTH);
+		p->view.origin_pixel.a += 0.25 / p->view.zoom;
 		draw(p);
 	}
 	else if (keycode == 65364)
 	{
-		p->view.origin.y -= (p->view.zoom / HEIGHT);
+		p->view.origin_pixel.b -= 0.25 / p->view.zoom;
 		draw(p);
 	}
 	else if (keycode == 65362)
 	{
-		p->view.origin.y += (p->view.zoom / HEIGHT);
+		p->view.origin_pixel.b += 0.25 / p->view.zoom;
+		draw(p);
+	}
+	else if (keycode == 114)
+	{
+		// reset view
+		p->view.zoom = 1;
+		p->view.origin_pixel.a = -2;
+		p->view.origin_pixel.b = 1;
 		draw(p);
 	}
 	else
@@ -168,8 +176,8 @@ void draw(s_params *params)
 		for (int i = 0; i < WIDTH; i++)
 		{
 			s_point point;
-			point.a = (i - view.origin.x) / (view.pixel_unit * view.zoom);
-			point.b = (j - view.origin.y) / (view.pixel_unit * view.zoom);
+			point.a = view.origin_pixel.a + (double) i / (view.zoom * view.pixel_unit);
+			point.b = view.origin_pixel.b - (double) j / (view.zoom * view.pixel_unit);
 			int colour = is_bounded_heart(point, params);
 			// if(colour)
 			// 	printf("colour: %i %u\n", colour, mlx_get_color_value(params->mlx, colour));
@@ -184,8 +192,8 @@ void draw(s_params *params)
 int mouse_hook(int button, int x, int y, s_params *p)
 {
 	s_point point;
-	point.a = (x - p->view.origin.x) / p->view.zoom;
-	point.b = (y - p->view.origin.y) / p->view.zoom;
+	point.a = p->view.origin_pixel.a + (double) x / (p->view.zoom * p->view.pixel_unit);
+	point.b = p->view.origin_pixel.b - (double) y / (p->view.zoom * p->view.pixel_unit);
 
 	if (button == 4)
 	{
@@ -193,31 +201,22 @@ int mouse_hook(int button, int x, int y, s_params *p)
 		p->view.zoom = p->view.zoom * 1.1;
 		p->view.zoom_count++;
 
-		point.x = (point.a * p->view.zoom) + p->view.origin.x;
-		point.y = (point.b * p->view.zoom) + p->view.origin.y;
+		p->view.origin_pixel.a = point.a - (double) x / (p->view.zoom * p->view.pixel_unit);
+		p->view.origin_pixel.b = point.b + (double) y / (p->view.zoom * p->view.pixel_unit);
 
-		long long x_dist = point.x - x;
-		long long y_dist = point.y - y;
-		p->view.origin.x -= (x_dist);
-		p->view.origin.y -= (y_dist);
 	}
 	else if (button == 5)
 	{
 		p->view.zoom = p->view.zoom * 0.9;
 		p->view.zoom_count--;
 
-		point.x = (point.a * p->view.zoom) + p->view.origin.x;
-		point.y = (point.b * p->view.zoom) + p->view.origin.y;
-
-		long long x_dist = point.x - x;
-		long long y_dist = point.y - y;
-		p->view.origin.x -= (x_dist);
-		p->view.origin.y -= (y_dist);
+		p->view.origin_pixel.a = point.a - (double) x / (p->view.zoom * p->view.pixel_unit);
+		p->view.origin_pixel.b = point.b + (double) y / (p->view.zoom * p->view.pixel_unit);
 	}
 	// if (p->view.zoom_count > 200)
 	// {
 	// 	printf("zc: %i zoom: %lf\n", p->view.zoom_count, p->view.zoom);
-	// 	printf("ox: %lli oy: %lli\n", p->view.origin.x, p->view.origin.y);
+	// 	printf("ox: %lli oy: %lli\n", p->view.origin_pixel.x, p->view.origin_pixel.y);
 
 	// 	printf("a: %lf b: %lf\n", point.a, point.b);
 	// }
@@ -235,10 +234,10 @@ int	main(void)
 	params.img = mlx_new_image(params.mlx, WIDTH, HEIGHT);
 	params.addr = mlx_get_data_addr(params.img, &(params.bpp), &(params.line_size), &(params.endian));
 	
-	params.view.origin.x = WIDTH / 2;
-	params.view.origin.y = HEIGHT / 2;
-	params.view.origin.a = 0;
-	params.view.origin.b = 0;
+	params.view.origin_pixel.x = 0;
+	params.view.origin_pixel.y = 0;
+	params.view.origin_pixel.a = -2;
+	params.view.origin_pixel.b = 1;
 	params.view.zoom_count = 0;
 
 	params.view.zoom = 1;
