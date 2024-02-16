@@ -126,24 +126,42 @@ unsigned int interpolateColor(unsigned int color1, unsigned int color2, float t)
     return (r << 16) | (g << 8) | b;
 }
 
-int is_bounded(s_point point, s_params *p)
+unsigned int mapRatioToColor(float ratio, s_params *p) {
+    // Scale the ratio to the range of the sine function
+    float scaledRatio = ratio * 2 * M_PI * p->view.zoom_count;
+
+    // Use a sine function to introduce oscillations
+    float r = (sin(scaledRatio) + 1) / 2; // Red component
+    float g = (sin(scaledRatio + 2 * M_PI / 3) + 1) / 2; // Green component
+    float b = (sin(scaledRatio + 4 * M_PI / 3) + 1) / 2; // Blue component
+
+    // Scale the color components to the range [0, 255]
+    unsigned char red = (unsigned char)(r * 255);
+    unsigned char green = (unsigned char)(g * 255);
+    unsigned char blue = (unsigned char)(b * 255);
+
+    // Pack the color components into a single integer
+    return (red << 16) | (green << 8) | blue;
+}
+
+int is_bounded(s_point zo, s_point c, s_params *p)
 {
-	s_point z;
+	s_point zn;
 	double a;
 
-	z.a = 0;
-	z.b = 0;
-	int max_iter = p->view.zoom_count < 50 ? 50 : p->view.zoom_count;
+	zn = zo;
+
+	int max_iter = 50 + p->view.zoom_count;
 	int iter = 0;
 	while (iter < max_iter)
 	{
-		a = z.a;
-		// z.a = (fabs(a) * a - (z.b * z.b)) + point.a;
-		// z.b = (fabs(a) * z.b * 2) + point.b;
+		a = zn.a;
+		// zn.a = (fabs(a) * a - (zn.b * zn.b)) + point.a;
+		// zn.b = (fabs(a) * zn.b * 2) + point.b;
 
-		z.a = (a * a) - (z.b * z.b) + point.a;
-		z.b = (2 * a * z.b) + point.b;
-		if ((z.a * z.a + z.b * z.b) > 4)
+		zn.a = (a * a) - (zn.b * zn.b) + c.a;
+		zn.b = (2 * a * zn.b) + c.b;
+		if ((zn.a * zn.a + zn.b * zn.b) > 4)
 			break ;
 		iter++;
 	}
@@ -154,10 +172,10 @@ int is_bounded(s_point point, s_params *p)
 	{
 		// if 0 = > red
 		// if 1 => white
-		return interpolateColor(0x00ff0000, 0x00ffffff, (iter_ratio - 0.5) / 0.5);
+		return mapRatioToColor((iter_ratio - 0.5) / 0.5, p);
 	}
 	else
-		return interpolateColor(0x001a0000, 0x00ff0000, iter_ratio / 0.5);
+		return interpolateColor(0x00000000, 0x00ffffff, iter_ratio / 0.5);
 	// get a colour between red and pink
 	// map 0 - max to 0x00ff0000 and 0x00000000
 	int red = 0x00ff0000;
@@ -172,6 +190,13 @@ void draw(s_params *params)
 {
 	s_view view = params->view;
 
+	s_point z_mandel;
+	s_point z_julia;
+
+	z_mandel.a = 0;
+	z_mandel.b = 0;
+	z_julia.a = 0.28;
+	z_julia.b = 0.008;
 	for (int j = 0; j < HEIGHT; j++)
 	{
 		for (int i = 0; i < WIDTH; i++)
@@ -179,7 +204,8 @@ void draw(s_params *params)
 			s_point point;
 			point.a = view.origin_pixel.a + (double) i / (view.zoom * view.pixel_unit);
 			point.b = view.origin_pixel.b - (double) j / (view.zoom * view.pixel_unit);
-			int colour = is_bounded(point, params);
+
+			int colour = is_bounded(z_mandel, point, params);
 			// if(colour)
 			// 	printf("colour: %i %u\n", colour, mlx_get_color_value(params->mlx, colour));
 			char *pixel = params->addr + j * params->line_size + i * (params->bpp / 8);
@@ -239,7 +265,7 @@ int	main(void)
 	params.view.origin_pixel.y = 0;
 	params.view.origin_pixel.a = -2;
 	params.view.origin_pixel.b = 1;
-	params.view.zoom_count = 0;
+	params.view.zoom_count = 1;
 
 	params.view.zoom = 1;
 	params.view.pixel_unit = 200;
