@@ -28,8 +28,8 @@ enum fractol{MANDLEBROT, JULIA, BURNING};
 
 typedef struct t_point
 {
-	long long	x;
-	long long	y;
+	int	x;
+	int	y;
 
 	double a;
 	double b;
@@ -47,6 +47,7 @@ typedef struct t_view
 
 	int		max_iter;
 	s_point	c;
+	s_point clicked;
 } s_view;
 
 
@@ -201,8 +202,6 @@ unsigned int is_bounded(s_point pt, s_params *p)
 	}
 	if (iter_ratio > 0.5)
 		return interpolateColor(mapRatioToColor((iter_ratio - 0.5) / 0.5, p), WHITE, (iter_ratio - 0.5) / 0.5);
-	// else  if (iter_ratio > 0.5)
-		// return mapRatioToColor((iter_ratio - 0.5) / 0.25, p);
 	else
 		return mapRatioToColor(iter_ratio / 0.5, p);
 
@@ -255,6 +254,11 @@ int mouse_hook(int button, int x, int y, s_params *p)
 		p->view.origin_pixel.a = point.a - (double) x / (p->view.zoom * p->view.pixel_unit);
 		p->view.origin_pixel.b = point.b + (double) y / (p->view.zoom * p->view.pixel_unit);
 	}
+	else if (button == 1)
+	{
+		p->view.clicked.x = x;
+		p->view.clicked.y = y;
+	}
 	else if (button == 2)
 	{
 		printf("x: %i y: %i, a: %lf b: %lf\n", x, y, point.a, point.b);
@@ -264,6 +268,22 @@ int mouse_hook(int button, int x, int y, s_params *p)
 	return (1);
 }
 
+int drag(int x, int y, s_params *p)
+{
+	s_point pt = p->view.clicked;
+
+	if (abs(pt.x - x) * abs(pt.y - y) > 10)
+	{
+		float xratio = (float)(x - p->view.clicked.x) / p->view.pixel_unit;
+		float yratio = (float)(y - p->view.clicked.y) / p->view.pixel_unit;
+		p->view.origin_pixel.a -= xratio / p->view.zoom;
+		p->view.origin_pixel.b += yratio / p->view.zoom;
+		p->view.clicked.x = x;
+		p->view.clicked.y = y;
+		draw(p);
+	}
+	return (1);	
+}
 
 int	main(int ac, char **av)
 {
@@ -312,6 +332,7 @@ int	main(int ac, char **av)
 	mlx_key_hook(params.win, key_hook, &params);
 
 	mlx_mouse_hook(params.win, mouse_hook, &params);
+	mlx_hook(params.win, 6, 1L<<8, drag, &params);
 
 	// close window with x button
 	// TODO: understand event masking?
