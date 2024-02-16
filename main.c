@@ -21,7 +21,7 @@
 # define HEIGHT 400
 
 # define WIDTH 800
-
+enum colours{BLACK= 0x00000000, WHITE = 0x00ffffff};
 
 typedef struct t_point
 {
@@ -39,7 +39,12 @@ typedef struct t_view
 	int		zoom_count;
 	int		pixel_unit;
 	double	zoom;
+	int		col_scheme;
+	int		invert;
+
+	int		max_iter;
 } s_view;
+
 
 typedef struct t_params
 {
@@ -53,7 +58,6 @@ typedef struct t_params
 	int		bpp;
 	int		line_size;
 	int		endian;
-
 } s_params;
 
 void draw(s_params *params);
@@ -72,27 +76,15 @@ int close_window(s_params *p)
 int key_hook(int keycode, s_params *p)
 {
 	if (keycode == 65307)
-		close_window(p);
+		return close_window(p);
 	else if(keycode == 65361)
-	{
 		p->view.origin_pixel.a -= 0.25 / p->view.zoom;
-		draw(p);
-	}
 	else if(keycode == 65363)
-	{
 		p->view.origin_pixel.a += 0.25 / p->view.zoom;
-		draw(p);
-	}
 	else if (keycode == 65364)
-	{
 		p->view.origin_pixel.b -= 0.25 / p->view.zoom;
-		draw(p);
-	}
 	else if (keycode == 65362)
-	{
 		p->view.origin_pixel.b += 0.25 / p->view.zoom;
-		draw(p);
-	}
 	else if (keycode == 114)
 	{
 		// reset view
@@ -100,10 +92,19 @@ int key_hook(int keycode, s_params *p)
 		p->view.zoom_count = 0;
 		p->view.origin_pixel.a = -2;
 		p->view.origin_pixel.b = 1;
-		draw(p);
+		p->view.max_iter = 80;
 	}
+	else if (keycode == 65451)
+		p->view.max_iter += 10;
+	else if (keycode == 65453)
+		p->view.max_iter -= 10;
+	else if (keycode == 32)
+		p->view.col_scheme = (p->view.col_scheme + 1) % 2;
+	else if (keycode == 65289)
+		p->view.invert = (p->view.invert + 1) % 2;
 	else
 		printf("Key: %i\n", keycode);
+	draw(p);
 	return (1);
 }
 
@@ -144,20 +145,20 @@ unsigned int mapRatioToColor(float ratio, s_params *p) {
     return (red << 16) | (green << 8) | blue;
 }
 
-int is_bounded(s_point zo, s_point c, s_params *p)
+unsigned int is_bounded(s_point zo, s_point c, s_params *p)
 {
 	s_point zn;
 	double a;
 
 	zn = zo;
 
-	int max_iter = 50 + p->view.zoom_count;
+	int max_iter = p->view.max_iter + p->view.zoom_count;
 	int iter = 0;
 	while (iter < max_iter)
 	{
 		a = zn.a;
-		// zn.a = (fabs(a) * a - (zn.b * zn.b)) + point.a;
-		// zn.b = (fabs(a) * zn.b * 2) + point.b;
+		// zn.a = (fabs(a) * a - (zn.b * zn.b)) + c.a;
+		// zn.b = (fabs(a) * zn.b * 2) + c.b;
 
 		zn.a = (a * a) - (zn.b * zn.b) + c.a;
 		zn.b = (2 * a * zn.b) + c.b;
@@ -166,24 +167,23 @@ int is_bounded(s_point zo, s_point c, s_params *p)
 		iter++;
 	}
 	double iter_ratio = (float)iter/max_iter;
+	unsigned int color = mapRatioToColor(log(p->view.zoom), p);
 	if (iter == max_iter)
-		return 0x00000000;
-	else if (iter_ratio > 0.5)
+			return BLACK;
+	if (p->view.col_scheme)
 	{
-		// if 0 = > red
-		// if 1 => white
-		return mapRatioToColor((iter_ratio - 0.5) / 0.5, p);
+		if (iter_ratio > 0.5)
+			return interpolateColor(color, WHITE, iter_ratio * 2 - 1);
+		else
+			return interpolateColor(BLACK, color, iter_ratio / 0.5);
 	}
-	else
-		return interpolateColor(0x00000000, 0x00ffffff, iter_ratio / 0.5);
-	// get a colour between red and pink
-	// map 0 - max to 0x00ff0000 and 0x00000000
-	int red = 0x00ff0000;
-	int cmax = 0x00ffc0cb;
-	int range = cmax - red;
+	if (iter_ratio > 0.5)
+		return interpolateColor(mapRatioToColor((iter_ratio - 0.5) / 0.5, p), WHITE, (iter_ratio - 0.5) / 0.5);
+	else 
+		return mapRatioToColor((iter_ratio - 0.5) / 0.5, p);
+	// else
+	// 	return interpolateColor(BLACK, mapRatioToColor(iter_ratio / 0.25, p), (iter_ratio) / 0.25);
 
-	// printf("%f \n", ((double)iter / max_iter));
-	return (cmax - ((double)iter / max_iter) * range);
 }
 
 void draw(s_params *params)
@@ -205,9 +205,9 @@ void draw(s_params *params)
 			point.a = view.origin_pixel.a + (double) i / (view.zoom * view.pixel_unit);
 			point.b = view.origin_pixel.b - (double) j / (view.zoom * view.pixel_unit);
 
-			int colour = is_bounded(z_mandel, point, params);
-			// if(colour)
-			// 	printf("colour: %i %u\n", colour, mlx_get_color_value(params->mlx, colour));
+			unsigned int colour = is_bounded(z_mandel, point, params);
+			if (params->view.invert)
+				colour = colour ^ WHITE;
 			char *pixel = params->addr + j * params->line_size + i * (params->bpp / 8);
 			*(unsigned int *) pixel = mlx_get_color_value(params->mlx, colour);
 		}
@@ -234,21 +234,18 @@ int mouse_hook(int button, int x, int y, s_params *p)
 	}
 	else if (button == 5)
 	{
-		p->view.zoom = p->view.zoom * 0.9;
+		p->view.zoom = p->view.zoom * (1 / 1.1);
 		p->view.zoom_count--;
 
 		p->view.origin_pixel.a = point.a - (double) x / (p->view.zoom * p->view.pixel_unit);
 		p->view.origin_pixel.b = point.b + (double) y / (p->view.zoom * p->view.pixel_unit);
 	}
-	// if (p->view.zoom_count > 200)
-	// {
-	// 	printf("zc: %i zoom: %lf\n", p->view.zoom_count, p->view.zoom);
-	// 	printf("ox: %lli oy: %lli\n", p->view.origin_pixel.x, p->view.origin_pixel.y);
-
-	// 	printf("a: %lf b: %lf\n", point.a, point.b);
-	// }
-	if (button || x || y)
-		draw(p);
+	else if (button == 2)
+	{
+		printf("x: %i y: %i, a: %lf b: %lf\n", x, y, point.a, point.b);
+		printf("zc: %i, zoom: %lf\n", p->view.zoom_count, p->view.zoom);
+	}
+	draw(p);
 	return (1);
 }
 
@@ -269,7 +266,9 @@ int	main(void)
 
 	params.view.zoom = 1;
 	params.view.pixel_unit = 200;
-
+	params.view.col_scheme = 0;
+	params.view.invert = 0;
+	params.view.max_iter = 50;
 	// draw(&params);
 	// close window with ESC key
 	// TODO: arrow keys to "move"
