@@ -264,6 +264,7 @@ int mouse_hook(int button, int x, int y, s_params *p)
 	return (1);
 }
 
+
 int	main(int ac, char **av)
 {
 	if (ac == 1
