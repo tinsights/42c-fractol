@@ -74,7 +74,7 @@ int	validate_input(int ac, char **av, t_params *p)
 		|| ac > 4)
 	{
 		ft_printf("USAGE: \n\t./fractol [mandlebrot | burning]\n");
-		ft_printf("./fractol julia [RE(Z)] [IM(Z)]\n");
+		ft_printf("\t./fractol julia [RE(Z)] [IM(Z)]\n");
 		return (0);
 	}
 	if (ac == 4)
