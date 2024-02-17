@@ -13,4 +13,63 @@
 #ifndef FRACTOL_H
 # define FRACTOL_H
 
+# include <mlx.h>
+# include <X11/keysym.h>
 
+# include <limits.h>
+# include <math.h>
+# include <stdlib.h>
+# include <stdbool.h>
+# include "libft.h"
+
+# define HEIGHT 400
+# define WIDTH 400
+
+enum e_colours{black= 0x00000000, white = 0x00ffffff};
+enum e_mode{mandlebrot, julia, burning};
+
+typedef struct s_point
+{
+	int		x;
+	int		y;
+
+	double	a;
+	double	b;
+}	t_point;
+
+typedef struct s_view
+{
+	t_point	origin_pixel;
+	t_point	translation;
+	int		zoom_count;
+	int		pixel_unit;
+	double	zoom;
+	int		col_scheme;
+	int		invert;
+
+	int		max_iter;
+	t_point	c;
+	t_point	clicked;
+}	t_view;
+
+typedef struct s_params
+{
+	void		*mlx;
+	void		*win;
+	void		*img;
+	void		*addr;
+
+	t_view		view;
+
+	int			bpp;
+	int			line_size;
+	int			endian;
+
+	enum e_mode	fractol;
+	int			btn_clicked;
+	bool		dragging;
+}	t_params;
+
+void	draw(t_params *params);
+
+#endif

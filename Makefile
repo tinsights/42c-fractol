@@ -10,10 +10,12 @@ LIBFT = $(LIBDIR)/libft.a
 MLXDIR = mlx/
 MLX =  $(MLXDIR)/libmlx.a
 
+SRCS = main.c
+
 all: $(NAME)
 
-$(NAME): $(LIBFT) $(MLX)
-	cc $(CFLAGS) *.c $(LIBFLAGS) $(INC) -o $(NAME)
+$(NAME): $(SRCS) $(LIBFT) $(MLX)
+	cc $(CFLAGS) $(SRCS) $(LIBFLAGS) $(INC) -o $(NAME)
 
 $(MLX):
 	make -C $(MLXDIR)

@@ -9,71 +9,10 @@
 /*   Updated: 2024/02/07 17:08:07 by tjegades         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
-#include <mlx.h>
-#include <limits.h>
-#include <math.h>
 
-#include <stdio.h>
+#include "fractol.h"
 
-#include <X11/keysym.h>
-
-#include "libft.h"
-#include <stdlib.h>
-#include <stdbool.h>
-
-# define HEIGHT 400
-
-# define WIDTH 800
-enum colours{BLACK= 0x00000000, WHITE = 0x00ffffff};
-enum fractol{MANDLEBROT, JULIA, BURNING};
-
-typedef struct t_point
-{
-	int	x;
-	int	y;
-
-	double a;
-	double b;
-} s_point;
-
-typedef struct t_view
-{
-	s_point	origin_pixel;
-	s_point	translation;
-	int		zoom_count;
-	int		pixel_unit;
-	double	zoom;
-	int		col_scheme;
-	int		invert;
-
-	int		max_iter;
-	s_point	c;
-	s_point clicked;
-} s_view;
-
-
-typedef struct t_params
-{
-	void	*mlx;
-	void	*win;
-	void	*img;
-	void	*addr;
-
-	s_view	view;
-
-	int		bpp;
-	int		line_size;
-	int		endian;
-
-	enum fractol fractol;
-	int		btn_clicked;
-	bool	dragging;
-} s_params;
-
-void draw(s_params *params);
-
-
-int close_window(s_params *p)
+int	close_window(t_params *p)
 {
 	mlx_destroy_image(p->mlx, p->img);
 	mlx_destroy_window(p->mlx, p->win);
@@ -83,7 +22,7 @@ int close_window(s_params *p)
 	return (1);
 }
 
-int key_hook(int keycode, s_params *p)
+int key_hook(int keycode, t_params *p)
 {
 	if (keycode == XK_Escape)
 		return close_window(p);
@@ -101,7 +40,7 @@ int key_hook(int keycode, s_params *p)
 		p->view.zoom = 1;
 		p->view.zoom_count = 0;
 		p->view.origin_pixel.a = -2;
-		p->view.origin_pixel.b = 1;
+		p->view.origin_pixel.b = 2;
 		p->view.max_iter = 80;
 	}
 	else if (keycode == 65451)
@@ -135,34 +74,31 @@ unsigned int interpolateColor(unsigned int color1, unsigned int color2, float t)
     return (r << 16) | (g << 8) | b;
 }
 
-unsigned int mapRatioToColor(float ratio, s_params *p) {
-    // Scale the ratio to the range of the sine function
-    float scaledRatio = ratio * 2 * M_PI + log(p->view.zoom);
+unsigned int mapRatioToColor(float ratio, t_params *p) {
 
-    // Use a sine function to introduce oscillations
-    float r = (sin(scaledRatio) + 1) / 2; // Red component
-    float g = (sin(scaledRatio + 2 * M_PI / 3) + 1) / 2; // Green component
-    float b = (sin(scaledRatio + 4 * M_PI / 3) + 1) / 2; // Blue component
+	float	scaledRatio;
+	unsigned char	r;
+	unsigned char	g;
+	unsigned char	b;
 
-    // Scale the color components to the range [0, 255]
-    unsigned char red = (unsigned char)(r * 255);
-    unsigned char green = (unsigned char)(g * 255);
-    unsigned char blue = (unsigned char)(b * 255);
+	scaledRatio = ratio * 2 * M_PI + log(p->view.zoom);
+	r = (unsigned char)((sin(scaledRatio) + 1) / 2 * 255);
+	g = (unsigned char)((sin(scaledRatio + 2 * M_PI / 3) + 1) / 2 * 255);
+	b = (unsigned char)((sin(scaledRatio + 4 * M_PI / 3) + 1) / 2 * 255);
 
-    // Pack the color components into a single integer
-    return (red << 16) | (green << 8) | blue;
+	return (r << 16) | (g << 8) | b;
 }
 
-unsigned int is_bounded(s_point pt, s_params *p)
+unsigned int is_bounded(t_point pt, t_params *p)
 {
-	s_point zn;
-	s_point c;
+	t_point zn;
+	t_point c;
 	double a;
 
 	zn.a = 0.0;
 	zn.b = 0.0;
 
-	if (p->fractol == JULIA)
+	if (p->fractol == julia)
 	{
 		zn = pt;
 		c = p->view.c;
@@ -175,7 +111,7 @@ unsigned int is_bounded(s_point pt, s_params *p)
 	{
 		a = zn.a;
 
-		if (p->fractol == BURNING)
+		if (p->fractol == burning)
 		{
 			zn.a = (a * a) - (zn.b * zn.b) - c.a;
 			zn.b = (2 * fabs(a * zn.b)) - c.b;
@@ -193,36 +129,35 @@ unsigned int is_bounded(s_point pt, s_params *p)
 	double iter_ratio = (float)iter/max_iter;
 	unsigned int color = mapRatioToColor(log(p->view.zoom), p);
 	if (iter == max_iter)
-			return BLACK;
+			return black;
 	if (p->view.col_scheme)
 	{
 		if (iter_ratio > 0.5)
-			return interpolateColor(color, WHITE, iter_ratio * 2 - 1);
+			return interpolateColor(color, white, iter_ratio * 2 - 1);
 		else
-			return interpolateColor(BLACK, color, iter_ratio / 0.5);
+			return interpolateColor(black, color, iter_ratio / 0.5);
 	}
 	if (iter_ratio > 0.5)
-		return interpolateColor(mapRatioToColor((iter_ratio - 0.5) / 0.5, p), WHITE, (iter_ratio - 0.5) / 0.5);
+		return interpolateColor(mapRatioToColor((iter_ratio - 0.5) / 0.5, p), white, (iter_ratio - 0.5) / 0.5);
 	else
 		return mapRatioToColor(iter_ratio / 0.5, p);
-
 }
 
-void draw(s_params *params)
+void draw(t_params *params)
 {
-	s_view view = params->view;
+	t_view view = params->view;
 
 	for (int j = 0; j < HEIGHT; j++)
 	{
 		for (int i = 0; i < WIDTH; i++)
 		{
-			s_point point;
+			t_point point;
 			point.a = view.origin_pixel.a + (double) i / (view.zoom * view.pixel_unit);
 			point.b = view.origin_pixel.b - (double) j / (view.zoom * view.pixel_unit);
 
 			unsigned int colour = is_bounded(point, params);
 			if (params->view.invert)
-				colour = colour ^ WHITE;
+				colour = colour ^ white;
 			char *pixel = params->addr + j * params->line_size + i * (params->bpp / 8);
 			*(unsigned int *) pixel = mlx_get_color_value(params->mlx, colour);
 		}
@@ -230,10 +165,9 @@ void draw(s_params *params)
 	mlx_put_image_to_window(params->mlx, params->win, params->img, 0, 0);
 }
 
-
-int mouse_hook(int button, int x, int y, s_params *p)
+int mouse_hook(int button, int x, int y, t_params *p)
 {
-	s_point point;
+	t_point point;
 	point.a = p->view.origin_pixel.a + (double) x / (p->view.zoom * p->view.pixel_unit);
 	point.b = p->view.origin_pixel.b - (double) y / (p->view.zoom * p->view.pixel_unit);
 
@@ -261,19 +195,19 @@ int mouse_hook(int button, int x, int y, s_params *p)
 		p->view.clicked.x = x;
 		p->view.clicked.y = y;
 	}
-	else if (button == 3 && p->fractol == MANDLEBROT)
+	else if (button == 3 && p->fractol == mandlebrot)
 	{
 			p->view.c = point;
-			p->fractol = JULIA;
+			p->fractol = julia;
 			p->dragging = true;
 	}
 	draw(p);
 	return (1);
 }
 
-int explore_julia(int x, int y, s_params *p)
+int explore_julia(int x, int y, t_params *p)
 {
-	s_point point;
+	t_point point;
 	point.a = p->view.origin_pixel.a + (double) x / (p->view.zoom * p->view.pixel_unit);
 	point.b = p->view.origin_pixel.b - (double) y / (p->view.zoom * p->view.pixel_unit);
 
@@ -282,9 +216,9 @@ int explore_julia(int x, int y, s_params *p)
 	return (1);
 }
 
-int drag(int x, int y, s_params *p)
+int drag(int x, int y, t_params *p)
 {
-	s_point pt = p->view.clicked;
+	t_point pt = p->view.clicked;
 
 	if (p->btn_clicked == 1)
 	{
@@ -304,10 +238,9 @@ int drag(int x, int y, s_params *p)
 	return (1);	
 }
 
-
-int switch_fractol(int button, int x, int y,s_params *p)
+int switch_fractol(int button, int x, int y,t_params *p)
 {
-	if (button == 3 && p->dragging && p->fractol != BURNING)
+	if (button == 3 && p->dragging && p->fractol != burning)
 		p->fractol = (p->fractol + 1) % 2;
 	else if (button == 8)
 		p->fractol = (p->fractol - 1) % 3;
@@ -327,11 +260,11 @@ int	main(int ac, char **av)
 		|| ac > 4)
 		return ft_printf("USAGE: \n\t ./fractol [mandlebrot | burning] \n\t ./fractol julia [RE(Z) in thousandths] [IM(Z) in thousandths]\n");
 
-	s_params params;
+	t_params params;
 
-	params.fractol = MANDLEBROT;
+	params.fractol = mandlebrot;
 	params.mlx = mlx_init();
-	params.win = mlx_new_window(params.mlx, WIDTH, HEIGHT, "test");
+	params.win = mlx_new_window(params.mlx, WIDTH, HEIGHT, "fract-ol");
 	params.img = mlx_new_image(params.mlx, WIDTH, HEIGHT);
 	params.addr = mlx_get_data_addr(params.img, &(params.bpp), &(params.line_size), &(params.endian));
 	
@@ -340,23 +273,23 @@ int	main(int ac, char **av)
 	params.view.origin_pixel.x = 0;
 	params.view.origin_pixel.y = 0;
 	params.view.origin_pixel.a = -2;
-	params.view.origin_pixel.b = 1;
+	params.view.origin_pixel.b = 2;
 
 	params.view.zoom = 1;
 	params.view.zoom_count = 0;
-	params.view.pixel_unit = 200;
+	params.view.pixel_unit = 100;
 	params.view.col_scheme = 1;
 	params.view.invert = 0;
 	params.view.max_iter = 50;
 
 	if (ac == 4)
 	{
-		params.fractol = JULIA;
+		params.fractol = julia;
 		params.view.c.a = (double) ft_atoi(av[2]) / 1000;
 		params.view.c.b = (double) ft_atoi(av[3]) / 1000;
 	}
 	else if (!ft_strncmp(av[1], "burning", 8))
-		params.fractol = BURNING;
+		params.fractol = burning;
 
 
 	draw(&params);
