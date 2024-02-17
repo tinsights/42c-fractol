@@ -1,15 +1,34 @@
-NAME = mlx_lab
+NAME = fractol
 
 CFLAGS = -Wall -Werror -Wextra
 LIBFLAGS = -Lmlx -lmlx -lXext -lX11 -lm -Llibft -lft
 INC = -Imlx -Ilibft/includes
 
+LIBDIR = libft/
+LIBFT = $(LIBDIR)/libft.a
+
+MLXDIR = mlx/
+MLX =  $(MLXDIR)/libmlx.a
+
 all: $(NAME)
 
-$(NAME): libft
-	cc $(CFLAGS) main.c $(LIBFLAGS) $(INC)
+$(NAME): $(LIBFT) $(MLX)
+	cc $(CFLAGS) *.c $(LIBFLAGS) $(INC) -o $(NAME)
 
-libft:
-	make -C libft
+$(MLX):
+	make -C $(MLXDIR)
 
-.PHONY: libft
+$(LIBFT):
+	make -C $(LIBDIR)
+
+clean:
+	rm -f *.o
+
+fclean: clean
+	$(MAKE) -C $(LIBDIR) fclean
+	$(MAKE) -C $(MLXDIR) clean
+	rm -f $(NAME)
+
+re: fclean all
+
+.PHONY: clean fclean re all

@@ -19,6 +19,7 @@
 
 #include "libft.h"
 #include <stdlib.h>
+#include <stdbool.h>
 
 # define HEIGHT 400
 
@@ -65,6 +66,8 @@ typedef struct t_params
 	int		endian;
 
 	enum fractol fractol;
+	int		btn_clicked;
+	bool	dragging;
 } s_params;
 
 void draw(s_params *params);
@@ -109,8 +112,6 @@ int key_hook(int keycode, s_params *p)
 		p->view.col_scheme = (p->view.col_scheme + 1) % 2;
 	else if (keycode == 65289)
 		p->view.invert = (p->view.invert + 1) % 2;
-	else
-		printf("Key: %i\n", keycode);
 	draw(p);
 	return (1);
 }
@@ -236,6 +237,7 @@ int mouse_hook(int button, int x, int y, s_params *p)
 	point.a = p->view.origin_pixel.a + (double) x / (p->view.zoom * p->view.pixel_unit);
 	point.b = p->view.origin_pixel.b - (double) y / (p->view.zoom * p->view.pixel_unit);
 
+	p->btn_clicked = button;
 	if (button == 4)
 	{
 
@@ -259,11 +261,23 @@ int mouse_hook(int button, int x, int y, s_params *p)
 		p->view.clicked.x = x;
 		p->view.clicked.y = y;
 	}
-	else if (button == 2)
+	else if (button == 3 && p->fractol == MANDLEBROT)
 	{
-		printf("x: %i y: %i, a: %lf b: %lf\n", x, y, point.a, point.b);
-		printf("zc: %i, zoom: %lf\n", p->view.zoom_count, p->view.zoom);
+			p->view.c = point;
+			p->fractol = JULIA;
+			p->dragging = true;
 	}
+	draw(p);
+	return (1);
+}
+
+int explore_julia(int x, int y, s_params *p)
+{
+	s_point point;
+	point.a = p->view.origin_pixel.a + (double) x / (p->view.zoom * p->view.pixel_unit);
+	point.b = p->view.origin_pixel.b - (double) y / (p->view.zoom * p->view.pixel_unit);
+
+	p->view.c = point;
 	draw(p);
 	return (1);
 }
@@ -272,17 +286,36 @@ int drag(int x, int y, s_params *p)
 {
 	s_point pt = p->view.clicked;
 
-	if (abs(pt.x - x) * abs(pt.y - y) > 10)
+	if (p->btn_clicked == 1)
 	{
-		float xratio = (float)(x - p->view.clicked.x) / p->view.pixel_unit;
-		float yratio = (float)(y - p->view.clicked.y) / p->view.pixel_unit;
-		p->view.origin_pixel.a -= xratio / p->view.zoom;
-		p->view.origin_pixel.b += yratio / p->view.zoom;
-		p->view.clicked.x = x;
-		p->view.clicked.y = y;
-		draw(p);
+		if (abs(pt.x - x) * abs(pt.y - y) > 10)
+		{
+			float xratio = (float)(x - p->view.clicked.x) / p->view.pixel_unit;
+			float yratio = (float)(y - p->view.clicked.y) / p->view.pixel_unit;
+			p->view.origin_pixel.a -= xratio / p->view.zoom;
+			p->view.origin_pixel.b += yratio / p->view.zoom;
+			p->view.clicked.x = x;
+			p->view.clicked.y = y;
+			draw(p);
+		}
 	}
+	else if (p->btn_clicked == 3)
+		explore_julia(x, y, p);
 	return (1);	
+}
+
+
+int switch_fractol(int button, int x, int y,s_params *p)
+{
+	if (button == 3 && p->dragging && p->fractol != BURNING)
+		p->fractol = (p->fractol + 1) % 2;
+	else if (button == 8)
+		p->fractol = (p->fractol - 1) % 3;
+	else if (button == 9)
+		p->fractol = (p->fractol + 1) % 3;
+	draw(p);
+	p->dragging = false;
+	return (x * y);
 }
 
 int	main(int ac, char **av)
@@ -292,7 +325,7 @@ int	main(int ac, char **av)
 		|| (ac == 2 && ft_strncmp("mandlebrot", av[1], 11) && ft_strncmp(av[1], "burning", 8))
 		|| (ac == 4 && ft_strncmp("julia", av[1], 6))
 		|| ac > 4)
-		return ft_printf("idiot\n");
+		return ft_printf("USAGE: \n\t ./fractol [mandlebrot | burning] \n\t ./fractol julia [RE(Z) in thousandths] [IM(Z) in thousandths]\n");
 
 	s_params params;
 
@@ -332,7 +365,8 @@ int	main(int ac, char **av)
 	mlx_key_hook(params.win, key_hook, &params);
 
 	mlx_mouse_hook(params.win, mouse_hook, &params);
-	mlx_hook(params.win, 6, 1L<<8, drag, &params);
+	mlx_hook(params.win, 6, 1L<<13, drag, &params);
+	mlx_hook(params.win, 5, 1L<<3, switch_fractol, &params);
 
 	// close window with x button
 	// TODO: understand event masking?
