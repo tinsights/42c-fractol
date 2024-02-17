@@ -41,13 +41,17 @@ typedef struct s_view
 {
 	t_point	origin_pixel;
 	t_point	translation;
+
+	double	zoom;
 	int		zoom_count;
 	int		pixel_unit;
-	double	zoom;
+	double	scale;
+
 	int		col_scheme;
 	int		invert;
 
 	int		max_iter;
+
 	t_point	c;
 	t_point	clicked;
 }	t_view;
@@ -70,6 +74,6 @@ typedef struct s_params
 	bool		dragging;
 }	t_params;
 
-void	draw(t_params *params);
+int	draw(t_params *params);
 
 #endif
