@@ -33,7 +33,7 @@ void	reset_view(t_params *p)
 	p->view.pixel_unit = 100;
 	p->view.col_scheme = 1;
 	p->view.invert = 0;
-	p->view.max_iter = 50;
+	p->view.max_iter = 100;
 	p->view.scale = p->view.zoom * p->view.pixel_unit;
 }
 
