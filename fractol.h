@@ -74,6 +74,14 @@ typedef struct s_params
 	bool		dragging;
 }	t_params;
 
-int	draw(t_params *params);
+unsigned int	pixel_color(t_point pt, t_params *p);
+int				draw(t_params *params);
+int				key_hook(int keycode, t_params *p);
+int				mouse_hook(int button, int x, int y, t_params *p);
+int				explore_julia(int x, int y, t_params *p);
+int				drag(int x, int y, t_params *p);
+int				switch_fractol(int button, int x, int y, t_params *p);
+int				close_window(t_params *p);
+void			reset_view(t_params *p);
 
 #endif

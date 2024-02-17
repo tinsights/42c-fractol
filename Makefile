@@ -10,12 +10,19 @@ LIBFT = $(LIBDIR)/libft.a
 MLXDIR = mlx/
 MLX =  $(MLXDIR)/libmlx.a
 
-SRCS = main.c
+SRCS = fractol.c \
+		colours.c \
+		hooks.c
+
+OBJS = $(SRCS:.c=.o)
 
 all: $(NAME)
 
-$(NAME): $(SRCS) $(LIBFT) $(MLX)
-	cc $(CFLAGS) $(SRCS) $(LIBFLAGS) $(INC) -o $(NAME)
+$(NAME): $(OBJS) $(LIBFT) $(MLX)
+	cc $(CFLAGS) $(OBJS) $(LIBFLAGS) $(INC) -o $(NAME)
+
+$(OBJS): $(SRCS)
+	cc $(CFLAGS) -c $(SRCS) $(INC)
 
 $(MLX):
 	make -C $(MLXDIR)
@@ -24,7 +31,7 @@ $(LIBFT):
 	make -C $(LIBDIR)
 
 clean:
-	rm -f *.o
+	rm -f $(OBJS)
 
 fclean: clean
 	$(MAKE) -C $(LIBDIR) fclean
@@ -33,4 +40,4 @@ fclean: clean
 
 re: fclean all
 
-.PHONY: clean fclean re all
+.PHONY: all clean fclean re
