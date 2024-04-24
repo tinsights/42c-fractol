@@ -21,6 +21,7 @@
 # include <stdlib.h>
 # include <stdbool.h>
 # include "libft.h"
+# include <pthread.h>
 
 # define HEIGHT 600
 # define WIDTH 600
@@ -72,6 +73,9 @@ typedef struct s_params
 	enum e_mode	fractol;
 	int			btn_clicked;
 	bool		dragging;
+	pthread_t	*threads;
+	pthread_mutex_t	rendering;
+
 }	t_params;
 
 unsigned int	pixel_color(t_point pt, t_params *p);

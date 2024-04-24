@@ -37,29 +37,63 @@ void	reset_view(t_params *p)
 	p->view.scale = p->view.zoom * p->view.pixel_unit;
 }
 
+#include <pthread.h>
+
+typedef struct s_row_thread  
+{
+	t_params 	*p;
+	int			row;
+} t_row;
+// routine for each thread
+void *calc_line(void *args)
+{
+	t_point 		point;
+	unsigned int	colour;
+	char 			*pixel;
+	int 			i;
+
+	t_row *row_args = args;
+
+	t_params *p = row_args->p;
+	int row = row_args->row;
+
+	point.b = p->view.origin_pixel.b - (double) row / (p->view.scale);
+	i = -1;
+	while (++i < WIDTH)
+	{
+		point.a = p->view.origin_pixel.a + (double) i / (p->view.scale);
+		colour = pixel_color(point, p);
+		if (p->view.invert)
+			colour = colour ^ white;
+		pixel = p->addr + row * p->line_size + i * (p->bpp / 8);
+		*(unsigned int *) pixel = mlx_get_color_value(p->mlx, colour);
+	}
+	return (NULL);
+}
+
+
+
 int	draw(t_params *p)
 {
-	t_point			point;
-	unsigned int	colour;
-	int				i;
 	int				j;
-	char			*pixel;
+
+
+	// pthread_mutex_lock(&p->rendering);
 
 	j = -1;
 	while (++j < HEIGHT)
 	{
-		i = -1;
-		while (++i < WIDTH)
-		{
-			point.a = p->view.origin_pixel.a + (double) i / (p->view.scale);
-			point.b = p->view.origin_pixel.b - (double) j / (p->view.scale);
-			colour = pixel_color(point, p);
-			if (p->view.invert)
-				colour = colour ^ white;
-			pixel = p->addr + j * p->line_size + i * (p->bpp / 8);
-			*(unsigned int *) pixel = mlx_get_color_value(p->mlx, colour);
-		}
+    	// create a thread for each row of pixels
+		t_row row;
+		row.row = j;
+		row.p = p;
+		pthread_create(p->threads + j, NULL, &calc_line, &row);
 	}
+	j = -1;
+	while (++j < HEIGHT)
+		pthread_join(p->threads[j], NULL);
+	// pthread_mutex_unlock(&p->rendering);
+
 	mlx_put_image_to_window(p->mlx, p->win, p->img, 0, 0);
 	return (1);
 }
@@ -100,6 +134,8 @@ int	main(int ac, char **av)
 	p.win = mlx_new_window(p.mlx, WIDTH, HEIGHT, "fract-ol");
 	p.img = mlx_new_image(p.mlx, WIDTH, HEIGHT);
 	p.addr = mlx_get_data_addr(p.img, &(p.bpp), &(p.line_size), &(p.endian));
+	p.threads = (pthread_t *) ft_calloc(HEIGHT, sizeof(pthread_t));
+	pthread_mutex_init(&p.rendering, NULL);
 	mlx_do_key_autorepeaton(p.mlx);
 
 	reset_view(&p);

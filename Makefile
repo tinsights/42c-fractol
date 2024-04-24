@@ -21,6 +21,9 @@ all: $(NAME)
 $(NAME): $(OBJS) $(LIBFT) $(MLX) Makefile fractol.h
 	cc $(CFLAGS) $(OBJS) $(LIBFLAGS) $(INC) -o $(NAME)
 
+debug: $(OBJS) $(LIBFT) $(MLX)
+	cc $(CFLAGS) -fsanitize=thread $(OBJS) $(LIBFLAGS) $(INC) -o $(NAME)_db
+
 $(OBJS): $(SRCS)
 	cc $(CFLAGS) -O3 -c $(SRCS) $(INC)
 
