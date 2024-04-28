@@ -23,8 +23,8 @@
 # include "libft.h"
 # include <pthread.h>
 
-# define HEIGHT 600
-# define WIDTH 600
+# define SIDE 600
+# define THREADS 20
 
 enum e_colours{black= 0x00000000, white = 0x00ffffff};
 enum e_mode{mandlebrot, julia, burning};

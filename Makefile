@@ -1,6 +1,6 @@
 NAME = fractol
 
-CFLAGS = -Wall -Werror -Wextra -O3
+CFLAGS = -Wall -Werror -Wextra-O3
 LIBFLAGS = -Lmlx -lmlx -lXext -lX11 -lm -Llibft -lft
 INC = -Imlx -Ilibft/includes
 
@@ -22,7 +22,7 @@ $(NAME): $(OBJS) $(LIBFT) $(MLX) Makefile fractol.h
 	cc $(CFLAGS) $(OBJS) $(LIBFLAGS) $(INC) -o $(NAME)
 
 debug: $(OBJS) $(LIBFT) $(MLX)
-	cc $(CFLAGS) -fsanitize=thread $(OBJS) $(LIBFLAGS) $(INC) -o $(NAME)_db
+	cc $(CFLAGS) -g -fsanitize=thread $(OBJS) $(LIBFLAGS) $(INC) -o $(NAME)_db
 
 $(OBJS): $(SRCS)
 	cc $(CFLAGS) -O3 -c $(SRCS) $(INC)
