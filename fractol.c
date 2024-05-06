@@ -26,9 +26,9 @@ void	reset_view(t_params *p)
 {
 	p->view.origin_pixel.x = 0;
 	p->view.origin_pixel.y = 0;
-	p->view.origin_pixel.a = -2;
-	p->view.origin_pixel.b = 2;
-	p->view.zoom = 1 * SIDE / 400;
+	p->view.origin_pixel.a = -2 * SIDE / 400;
+	p->view.origin_pixel.b = 2 * SIDE / 400;
+	p->view.zoom = 1;
 	p->view.zoom_count = 0;
 	p->view.pixel_unit = 100;
 	p->view.col_scheme = 1;
@@ -111,9 +111,9 @@ int	draw(t_params *p)
 		// printf("thread %i complete\n", j);
 
 	}
+	// pthread_mutex_unlock(&p->rendering);
 
 	mlx_put_image_to_window(p->mlx, p->win, p->img, 0, 0);
-	// pthread_mutex_unlock(&p->rendering);
 	return (1);
 }
 

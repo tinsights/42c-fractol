@@ -47,9 +47,9 @@ int	mouse_hook(int button, int x, int y, t_params *p)
 	point.y = y;
 	p->btn_clicked = button;
 	if (button == 4)
-		p->view.zoom = p->view.zoom * 1.1;
+		p->view.zoom = p->view.zoom * 1.2;
 	else if (button == 5)
-		p->view.zoom = p->view.zoom * (1 / 1.1);
+		p->view.zoom = p->view.zoom * (1 / 1.2);
 	else if (button == 1)
 		p->view.clicked = point;
 	else if (button == 3 && p->fractol == mandlebrot)
