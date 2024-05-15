@@ -33,7 +33,7 @@ void	reset_view(t_params *p)
 	p->view.pixel_unit = 100;
 	p->view.col_scheme = 1;
 	p->view.invert = 0;
-	p->view.max_iter = 200;
+	p->view.max_iter = 100;
 	p->view.scale = p->view.zoom * p->view.pixel_unit;
 }
 
@@ -101,7 +101,6 @@ int	draw(t_params *p)
 		rows[j].id = j;
 		rows[j].rows = SIDE / THREADS;
 		rows[j].rowstart = j * rows[j].rows;
-		// printf("Creating thread %i\n", j);
 		pthread_create(p->threads + j, NULL, &calc_line, rows + j);
 	}
 	j = -1;

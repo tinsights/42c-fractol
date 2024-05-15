@@ -47,9 +47,9 @@ int	mouse_hook(int button, int x, int y, t_params *p)
 	point.y = y;
 	p->btn_clicked = button;
 	if (button == 4)
-		p->view.zoom = p->view.zoom * 1.2;
+		p->view.zoom = p->view.zoom * 1.1;
 	else if (button == 5)
-		p->view.zoom = p->view.zoom * (1 / 1.2);
+		p->view.zoom = p->view.zoom * (1 / 1.1);
 	else if (button == 1)
 		p->view.clicked = point;
 	else if (button == 3 && p->fractol == mandlebrot)
@@ -62,7 +62,7 @@ int	mouse_hook(int button, int x, int y, t_params *p)
 	p->view.origin_pixel.a = point.a - (double) x / (p->view.scale);
 	p->view.origin_pixel.b = point.b + (double) y / (p->view.scale);
 	// p->view.zoom_count += (button == 4) + (-1) * (button == 5); // wtf is this?? why do i do this rubbish for norm????
-	p->view.max_iter += ((button == 4) + (-1) * (button == 5));
+	p->view.max_iter += ((button == 4) + (-1) * (button == 5)) * 5;
 	return (1);
 }
 

@@ -1,6 +1,6 @@
 NAME = fractol
 
-CFLAGS = -Wall -Werror -Wextra-O3
+CFLAGS = -Wall -Werror -Wextra -O3
 LIBFLAGS = -Lmlx -lmlx -lXext -lX11 -lm -Llibft -lft
 INC = -Imlx -Ilibft/includes
 
