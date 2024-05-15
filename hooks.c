@@ -34,7 +34,7 @@ int	key_hook(int keycode, t_params *p)
 		p->view.col_scheme = (p->view.col_scheme + 1) % 2;
 	else if (keycode == 65289)
 		p->view.invert = (p->view.invert + 1) % 2;
-	return (draw(p));
+	return (1);
 }
 
 int	mouse_hook(int button, int x, int y, t_params *p)
@@ -61,8 +61,9 @@ int	mouse_hook(int button, int x, int y, t_params *p)
 	p->view.scale = p->view.zoom * p->view.pixel_unit;
 	p->view.origin_pixel.a = point.a - (double) x / (p->view.scale);
 	p->view.origin_pixel.b = point.b + (double) y / (p->view.scale);
-	p->view.zoom_count += (button == 4) + (-1) * (button == 5);
-	return (draw(p));
+	// p->view.zoom_count += (button == 4) + (-1) * (button == 5); // wtf is this?? why do i do this rubbish for norm????
+	p->view.max_iter += ((button == 4) + (-1) * (button == 5));
+	return (1);
 }
 
 int	explore_julia(int x, int y, t_params *p)
@@ -72,7 +73,6 @@ int	explore_julia(int x, int y, t_params *p)
 	point.a = p->view.origin_pixel.a + (double) x / (p->view.scale);
 	point.b = p->view.origin_pixel.b - (double) y / (p->view.scale);
 	p->view.c = point;
-	draw(p);
 	return (1);
 }
 
@@ -93,7 +93,7 @@ int	drag(int x, int y, t_params *p)
 			p->view.origin_pixel.b += yratio / p->view.zoom;
 			p->view.clicked.x = x;
 			p->view.clicked.y = y;
-			draw(p);
+	
 		}
 	}
 	else if (p->btn_clicked == 3)
@@ -109,7 +109,6 @@ int	switch_fractol(int button, int x, int y, t_params *p)
 		p->fractol = (p->fractol - 1) % 3;
 	else if (button == 9)
 		p->fractol = (p->fractol + 1) % 3;
-	draw(p);
 	p->dragging = false;
 	return (x * y);
 }

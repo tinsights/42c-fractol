@@ -101,9 +101,9 @@ unsigned int	pixel_color(t_point pt, t_params *p)
 	t_point	zn;
 	t_point	c;
 	int		iter;
-	int		max_iter;
+	// int		max_iter;
 
-	max_iter = p->view.max_iter + p->view.zoom_count;
+	// max_iter = p->view.max_iter + p->view.zoom_count;
 	zn.a = 0.0;
 	zn.b = 0.0;
 	c = pt;
@@ -112,6 +112,6 @@ unsigned int	pixel_color(t_point pt, t_params *p)
 		zn = pt;
 		c = p->view.c;
 	}
-	iter = check_if_bounded(zn, c, max_iter, p->fractol);
-	return (color_map(iter, max_iter, p));
+	iter = check_if_bounded(zn, c, p->view.max_iter, p->fractol);
+	return (color_map(iter, p->view.max_iter, p));
 }

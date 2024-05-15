@@ -33,7 +33,7 @@ void	reset_view(t_params *p)
 	p->view.pixel_unit = 100;
 	p->view.col_scheme = 1;
 	p->view.invert = 0;
-	p->view.max_iter = 100;
+	p->view.max_iter = 40;
 	p->view.scale = p->view.zoom * p->view.pixel_unit;
 }
 
@@ -100,12 +100,14 @@ int	main(int ac, char **av)
 	p.win = mlx_new_window(p.mlx, WIDTH, HEIGHT, "fract-ol");
 	p.img = mlx_new_image(p.mlx, WIDTH, HEIGHT);
 	p.addr = mlx_get_data_addr(p.img, &(p.bpp), &(p.line_size), &(p.endian));
+	mlx_do_key_autorepeaton(p.mlx);
+
 	reset_view(&p);
-	draw(&p);
 	mlx_key_hook(p.win, key_hook, &p);
 	mlx_mouse_hook(p.win, mouse_hook, &p);
 	mlx_hook(p.win, 6, 1L << 13, drag, &p);
 	mlx_hook(p.win, 5, 1L << 3, switch_fractol, &p);
 	mlx_hook(p.win, 17, 0, &close_window, &p);
+	mlx_loop_hook(p.mlx, draw, &p);
 	mlx_loop(p.mlx);
 }

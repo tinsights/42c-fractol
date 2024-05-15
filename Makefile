@@ -18,11 +18,11 @@ OBJS = $(SRCS:.c=.o)
 
 all: $(NAME)
 
-$(NAME): $(OBJS) $(LIBFT) $(MLX)
+$(NAME): $(OBJS) $(LIBFT) $(MLX) Makefile fractol.h
 	cc $(CFLAGS) $(OBJS) $(LIBFLAGS) $(INC) -o $(NAME)
 
 $(OBJS): $(SRCS)
-	cc $(CFLAGS) -c $(SRCS) $(INC)
+	cc $(CFLAGS) -O3 -c $(SRCS) $(INC)
 
 $(MLX):
 	make -C $(MLXDIR)

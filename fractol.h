@@ -22,8 +22,8 @@
 # include <stdbool.h>
 # include "libft.h"
 
-# define HEIGHT 400
-# define WIDTH 400
+# define HEIGHT 600
+# define WIDTH 600
 
 enum e_colours{black= 0x00000000, white = 0x00ffffff};
 enum e_mode{mandlebrot, julia, burning};
