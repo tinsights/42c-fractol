@@ -23,7 +23,7 @@
 # include "libft.h"
 # include <pthread.h>
 
-# define SIDE 600
+# define SIDE 800
 # define THREADS 20
 
 enum e_colours{black= 0x00000000, white = 0x00ffffff};
