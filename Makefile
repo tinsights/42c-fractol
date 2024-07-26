@@ -7,6 +7,7 @@ INC = -Imlx -Ilibft/includes
 LIBDIR = libft/
 LIBFT = $(LIBDIR)/libft.a
 
+MLX_URL = git@github.com:42Paris/minilibx-linux.git
 MLXDIR = mlx/
 MLX =  $(MLXDIR)/libmlx.a
 
@@ -18,14 +19,21 @@ OBJS = $(SRCS:.c=.o)
 
 all: $(NAME)
 
-$(NAME): $(OBJS) $(LIBFT) $(MLX) Makefile fractol.h
+$(NAME): $(LIBFT) $(MLX) $(OBJS) Makefile fractol.h
 	cc $(CFLAGS) $(OBJS) $(LIBFLAGS) $(INC) -o $(NAME)
 
-$(OBJS): $(SRCS)
-	cc $(CFLAGS) -O3 -c $(SRCS) $(INC)
+$(OBJS): %.o: %.c
+	cc $(CFLAGS) -c $< -o $@ $(INC)
 
 $(MLX):
-	make -C $(MLXDIR)
+	@if [ ! -d $(MLXDIR) ] || [ ! -f $(MLX) ]; then \
+		echo "MLX directory or library not found. Cloning and building..."; \
+		rm -rf $(MLXDIR); \
+		git clone $(MLX_URL) $(MLXDIR); \
+		make -C $(MLXDIR); \
+	else \
+		echo "MLX library already exists. Skipping clone."; \
+	fi
 
 $(LIBFT):
 	make -C $(LIBDIR)
