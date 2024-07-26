@@ -27,7 +27,7 @@
 # define THREADS 20
 
 enum e_colours{black= 0x00000000, white = 0x00ffffff};
-enum e_mode{mandlebrot, julia, burning};
+enum e_mode{mandelbrot, julia, burning};
 
 typedef struct s_point
 {

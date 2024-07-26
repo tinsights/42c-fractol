@@ -120,12 +120,12 @@ int	validate_input(int ac, char **av, t_params *p)
 {
 	if (ac == 1
 		|| ac == 3
-		|| (ac == 2 && ft_strncmp("mandlebrot", av[1], 11) 
+		|| (ac == 2 && ft_strncmp("mandelbrot", av[1], 11) 
 			&& ft_strncmp(av[1], "burning", 8))
 		|| (ac == 4 && ft_strncmp("julia", av[1], 6))
 		|| ac > 4)
 	{
-		ft_printf("USAGE: \n\t./fractol [mandlebrot | burning]\n");
+		ft_printf("USAGE: \n\t./fractol [mandelbrot | burning]\n");
 		ft_printf("\t./fractol julia [RE(Z)] [IM(Z)]\n");
 		return (0);
 	}
@@ -138,7 +138,7 @@ int	validate_input(int ac, char **av, t_params *p)
 	else if (!ft_strncmp(av[1], "burning", 8))
 		p->fractol = burning;
 	else
-		p->fractol = mandlebrot;
+		p->fractol = mandelbrot;
 	return (1);
 }
 
