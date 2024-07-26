@@ -19,7 +19,7 @@ OBJS = $(SRCS:.c=.o)
 
 all: $(NAME)
 
-$(NAME): $(LIBFT) $(MLX) $(OBJS) Makefile fractol.h
+$(NAME): $(LIBFT) $(MLX) $(OBJS) fractol.h
 	cc $(CFLAGS) $(OBJS) $(LIBFLAGS) $(INC) -o $(NAME)
 
 $(OBJS): %.o: %.c
@@ -44,6 +44,7 @@ clean:
 fclean: clean
 	$(MAKE) -C $(LIBDIR) fclean
 	$(MAKE) -C $(MLXDIR) clean
+	rm -rf $(MLXDIR)
 	rm -f $(NAME)
 
 re: fclean all

@@ -52,7 +52,7 @@ int	mouse_hook(int button, int x, int y, t_params *p)
 		p->view.zoom = p->view.zoom * (1 / 1.1);
 	else if (button == 1)
 		p->view.clicked = point;
-	else if (button == 3 && p->fractol == mandlebrot)
+	else if (button == 3 && p->fractol == mandelbrot)
 	{
 		p->view.c = point;
 		p->fractol = julia;
