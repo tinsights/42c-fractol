@@ -31,9 +31,9 @@ void	reset_view(t_params *p)
 	p->view.zoom = 1;
 	p->view.zoom_count = 0;
 	p->view.pixel_unit = SIDE / 4;
-	p->view.col_scheme = 1;
+	p->view.col_scheme = 0;
 	p->view.invert = 0;
-	p->view.max_iter = 100;
+	p->view.max_iter = 200;
 	p->view.scale = p->view.zoom * p->view.pixel_unit;
 }
 
