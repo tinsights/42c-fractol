@@ -30,36 +30,88 @@ void	reset_view(t_params *p)
 	p->view.origin_pixel.b = 2;
 	p->view.zoom = 1;
 	p->view.zoom_count = 0;
-	p->view.pixel_unit = 100;
+	p->view.pixel_unit = SIDE / 4;
 	p->view.col_scheme = 1;
 	p->view.invert = 0;
-	p->view.max_iter = 40;
+	p->view.max_iter = 200;
 	p->view.scale = p->view.zoom * p->view.pixel_unit;
 }
 
-int	draw(t_params *p)
-{
-	t_point			point;
-	unsigned int	colour;
-	int				i;
-	int				j;
-	char			*pixel;
+#include <pthread.h>
 
-	j = -1;
-	while (++j < HEIGHT)
+typedef struct s_row_thread  
+{
+	t_params 	*p;
+	int			id;
+	int			rows;
+	int			rowstart;
+
+} t_row;
+// routine for each thread
+
+#include <stdio.h>
+void *calc_line(void *args)
+{
+	t_point 		point;
+	unsigned int	colour;
+	char 			*pixel;
+	int 			i;
+
+	t_row *row_args = args;
+
+	t_params *p = row_args->p;
+
+	int j = -1;
+	// printf("\tin thread: %i\n\t\trowstart: %i, rows: %i\n",row_args->id,  row_args->rowstart, row_args->rows);
+
+	while (++j < row_args->rows)
 	{
+		int row = row_args->rowstart + j;
+		point.b = p->view.origin_pixel.b - (double) (row) / (p->view.scale);
 		i = -1;
-		while (++i < WIDTH)
+		while (++i < SIDE)
 		{
 			point.a = p->view.origin_pixel.a + (double) i / (p->view.scale);
-			point.b = p->view.origin_pixel.b - (double) j / (p->view.scale);
 			colour = pixel_color(point, p);
 			if (p->view.invert)
 				colour = colour ^ white;
-			pixel = p->addr + j * p->line_size + i * (p->bpp / 8);
+			pixel = p->addr + row * p->line_size + i * (p->bpp / 8);
 			*(unsigned int *) pixel = mlx_get_color_value(p->mlx, colour);
 		}
 	}
+	return (NULL);
+}
+
+
+
+int	draw(t_params *p)
+{
+	int				j;
+
+
+	// pthread_mutex_lock(&p->rendering);
+
+	t_row rows[THREADS];
+
+	j = -1;
+	while (++j < THREADS)
+	{
+    	// create a thread for each row of pixels
+		rows[j].p = p;
+		rows[j].id = j;
+		rows[j].rows = SIDE / THREADS;
+		rows[j].rowstart = j * rows[j].rows;
+		pthread_create(p->threads + j, NULL, &calc_line, rows + j);
+	}
+	j = -1;
+	while (++j < THREADS)
+	{
+		pthread_join(p->threads[j], NULL);
+		// printf("thread %i complete\n", j);
+
+	}
+	// pthread_mutex_unlock(&p->rendering);
+
 	mlx_put_image_to_window(p->mlx, p->win, p->img, 0, 0);
 	return (1);
 }
@@ -97,11 +149,12 @@ int	main(int ac, char **av)
 	if (!validate_input(ac, av, &p))
 		return (-1);
 	p.mlx = mlx_init();
-	p.win = mlx_new_window(p.mlx, WIDTH, HEIGHT, "fract-ol");
-	p.img = mlx_new_image(p.mlx, WIDTH, HEIGHT);
+	p.win = mlx_new_window(p.mlx, SIDE, SIDE, "fract-ol");
+	p.img = mlx_new_image(p.mlx, SIDE, SIDE);
 	p.addr = mlx_get_data_addr(p.img, &(p.bpp), &(p.line_size), &(p.endian));
+	p.threads = (pthread_t *) ft_calloc(THREADS, sizeof(pthread_t));
+	pthread_mutex_init(&p.rendering, NULL);
 	mlx_do_key_autorepeaton(p.mlx);
-
 	reset_view(&p);
 	mlx_key_hook(p.win, key_hook, &p);
 	mlx_mouse_hook(p.win, mouse_hook, &p);

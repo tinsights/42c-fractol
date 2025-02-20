@@ -21,9 +21,10 @@
 # include <stdlib.h>
 # include <stdbool.h>
 # include "libft.h"
+# include <pthread.h>
 
-# define HEIGHT 600
-# define WIDTH 600
+# define SIDE 800
+# define THREADS 20
 
 enum e_colours{black= 0x00000000, white = 0x00ffffff};
 enum e_mode{mandelbrot, julia, burning};
@@ -72,6 +73,9 @@ typedef struct s_params
 	enum e_mode	fractol;
 	int			btn_clicked;
 	bool		dragging;
+	pthread_t	*threads;
+	pthread_mutex_t	rendering;
+
 }	t_params;
 
 unsigned int	pixel_color(t_point pt, t_params *p);

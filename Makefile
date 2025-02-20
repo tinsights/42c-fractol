@@ -1,8 +1,15 @@
 NAME = fractol
 
-CFLAGS = -Wall -Werror -Wextra -O3
-LIBFLAGS = -Lmlx -lmlx -lXext -lX11 -lm -Llibft -lft
-INC = -Imlx -Ilibft/includes
+CFLAGS = -Wall -Werror -Wextra -g
+LIBFLAGS = -Lmlx -lmlx -lXext -lX11 -lm -Llibft -lft 
+INC = -Imlx -Ilibft/includes -I/opt/X11/include
+
+UNAME_S := $(shell uname -s)
+ifeq ($(UNAME_S),Darwin)
+	# might be version dependent, unsure
+	INC += -I/opt/X11/include
+	LIBFLAGS += -L/opt/X11/lib
+endif
 
 LIBDIR = libft/
 LIBFT = $(LIBDIR)/libft.a
@@ -19,11 +26,14 @@ OBJS = $(SRCS:.c=.o)
 
 all: $(NAME)
 
-$(NAME): $(LIBFT) $(MLX) $(OBJS) fractol.h
-	cc $(CFLAGS) $(OBJS) $(LIBFLAGS) $(INC) -o $(NAME)
+$(NAME): $(MLX) $(OBJS) $(LIBFT)  Makefile fractol.h
+	cc $(CFLAGS) -O3 $(OBJS) $(LIBFLAGS) $(INC) -o $(NAME)
 
-$(OBJS): %.o: %.c
-	cc $(CFLAGS) -c $< -o $@ $(INC)
+%.o: %.c fractol.h
+	cc $(CFLAGS) -c $< $(INC) -o $@
+
+debug: $(MLX) $(OBJS) $(LIBFT) 
+	cc $(CFLAGS) -g -fsanitize=thread $(OBJS) $(LIBFLAGS) $(INC) -o $(NAME)_db
 
 $(MLX):
 	@if [ ! -d $(MLXDIR) ] || [ ! -f $(MLX) ]; then \
@@ -43,7 +53,7 @@ clean:
 
 fclean: clean
 	$(MAKE) -C $(LIBDIR) fclean
-	$(MAKE) -C $(MLXDIR) clean
+	$(MAKE) -C $(MLXDIR) fclean
 	rm -rf $(MLXDIR)
 	rm -f $(NAME)
 
