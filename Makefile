@@ -1,8 +1,15 @@
 NAME = fractol
 
-CFLAGS = -Wall -Werror -Wextra
-LIBFLAGS = -Lmlx -lmlx -lXext -lX11 -lm -Llibft -lft
-INC = -Imlx -Ilibft/includes
+CFLAGS = -Wall -Werror -Wextra -g
+LIBFLAGS = -Lmlx -lmlx -lXext -lX11 -lm -Llibft -lft 
+INC = -Imlx -Ilibft/includes -I/opt/X11/include
+
+UNAME_S := $(shell uname -s)
+ifeq ($(UNAME_S),Darwin)
+	# might be version dependent, unsure
+	INC += -I/opt/X11/include
+	LIBFLAGS += -L/opt/X11/lib
+endif
 
 LIBDIR = libft/
 LIBFT = $(LIBDIR)/libft.a
@@ -21,13 +28,16 @@ all: $(NAME)
 $(NAME): $(OBJS) $(LIBFT) $(MLX) Makefile fractol.h
 	cc $(CFLAGS) -O3 $(OBJS) $(LIBFLAGS) $(INC) -o $(NAME)
 
+%.o: %.c fractol.h
+	cc $(CFLAGS) -c $< $(INC) -o $@
+
 debug: $(OBJS) $(LIBFT) $(MLX)
 	cc $(CFLAGS) -g -fsanitize=thread $(OBJS) $(LIBFLAGS) $(INC) -o $(NAME)_db
 
-$(OBJS): $(SRCS) fractol.h
-	cc $(CFLAGS) -O3 -c $(SRCS) $(INC)
-
 $(MLX):
+	@if [ ! -d $(MLXDIR) ]; then \
+		git clone $(MLX_URL) $(MLXDIR);\
+	fi
 	make -C $(MLXDIR)
 
 $(LIBFT):
