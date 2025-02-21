@@ -11,6 +11,13 @@ ifeq ($(UNAME_S),Darwin)
 	LIBFLAGS += -L/opt/X11/lib
 endif
 
+UNAME_S := $(shell uname -s)
+ifeq ($(UNAME_S),Darwin)
+	# might be version dependent, unsure
+	INC += -I/opt/X11/include
+	LIBFLAGS += -L/opt/X11/lib
+endif
+
 LIBDIR = libft/
 LIBFT = $(LIBDIR)/libft.a
 
