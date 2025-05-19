@@ -2,14 +2,7 @@ NAME = fractol
 
 CFLAGS = -Wall -Werror -Wextra -g
 LIBFLAGS = -Lmlx -lmlx -lXext -lX11 -lm -Llibft -lft 
-INC = -Imlx -Ilibft/includes -I/opt/X11/include
-
-UNAME_S := $(shell uname -s)
-ifeq ($(UNAME_S),Darwin)
-	# might be version dependent, unsure
-	INC += -I/opt/X11/include
-	LIBFLAGS += -L/opt/X11/lib
-endif
+INC = -Imlx -Ilibft/includes
 
 UNAME_S := $(shell uname -s)
 ifeq ($(UNAME_S),Darwin)
@@ -33,7 +26,7 @@ OBJS = $(SRCS:.c=.o)
 
 all: $(NAME)
 
-$(NAME): $(MLX) $(OBJS) $(LIBFT)  Makefile fractol.h
+$(NAME): $(MLX) $(LIBFT) $(OBJS) Makefile fractol.h
 	cc $(CFLAGS) -O3 $(OBJS) $(LIBFLAGS) $(INC) -o $(NAME)
 
 %.o: %.c fractol.h
@@ -47,23 +40,40 @@ $(MLX):
 		echo "MLX directory or library not found. Cloning and building..."; \
 		rm -rf $(MLXDIR); \
 		git clone $(MLX_URL) $(MLXDIR); \
-		make -C $(MLXDIR); \
+		echo "Building MLX library..."; \
+		make -C $(MLXDIR) --silent > /dev/null 2>&1; \
+		if [ $$? -ne 0 ]; then \
+			echo "Error: Failed to build MLX library."; \
+			exit 1; \
+		fi; \
+		echo "MLX library built successfully at $(MLX)"; \
 	else \
 		echo "MLX library already exists. Skipping clone."; \
 	fi
 
 $(LIBFT):
-	make -C $(LIBDIR)
+	@echo "Building libft..."
+	@make -C $(LIBDIR) --silent
+	@if [ ! -f $(LIBFT) ]; then \
+		echo "Error: libft.a not found."; \
+		exit 1; \
+	fi
+	@echo "Libft library built at $(LIBFT)"
+
 
 clean:
-	rm -f $(OBJS)
+	@echo "Cleaning up object files..."
+	@rm -f $(OBJS)
+	@make -C $(LIBDIR) --silent clean
+	@make -C $(MLXDIR) --silent clean
+	@echo "Cleaned up object files."
 
 fclean: clean
-	$(MAKE) -C $(LIBDIR) fclean
-	$(MAKE) -C $(MLXDIR) fclean
-	rm -rf $(MLXDIR)
+	make -C $(LIBDIR) fclean --silent
 	rm -f $(NAME)
 
 re: fclean all
 
+echo:
+	echo $(MAKE)
 .PHONY: all clean fclean re
