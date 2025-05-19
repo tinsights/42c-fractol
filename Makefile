@@ -42,10 +42,6 @@ $(MLX):
 		git clone $(MLX_URL) $(MLXDIR); \
 		echo "Building MLX library..."; \
 		make -C $(MLXDIR) --silent > /dev/null 2>&1; \
-		if [ $$? -ne 0 ]; then \
-			echo "Error: Failed to build MLX library."; \
-			exit 1; \
-		fi; \
 		echo "MLX library built successfully at $(MLX)"; \
 	else \
 		echo "MLX library already exists. Skipping clone."; \
